@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="profile-container glass slide-in">
+    <div class="profile-header">
+        <div class="profile-img-large">UID</div>
+        <div class="profile-info">
+            <h1>{{ user.username }}</h1>
+            <p class="location">{{ user.location or 'Location not set' }}</p>
+            <div class="skills-tags">
+                {% if user.skills %}
+                {% for skill in user.skills.split(',') %}
+                <span class="skill-tag">{{ skill.strip() }}</span>
+                {% endfor %}
+                {% endif %}
+            </div>
+            {% if current_user.id == user.id %}
+            <a href="{{ url_for('main.edit_profile') }}" class="btn-outline"
+                style="margin-top: 1rem; display: inline-block;">Edit Profile</a>
+            {% else %}
+            <a href="{{ url_for('messages.chat', username=user.username) }}" class="btn-primary"
+                style="margin-top: 1rem; display: inline-block;">Send Message</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="profile-body">
+        <div class="profile-about glass">
+            <h3>About</h3>
+            <p>{{ user.bio or 'This user hasn\'t written a bio yet.' }}</p>
+        </div>
+
+        <div class="profile-reviews glass">
+            <h3>Reviews</h3>
+            {% if reviews %}
+            {% for review in reviews %}
+            <div class="review-item border-bottom">
+                <div class="rating">Stars: {{ review.rating }}/5</div>
+                <p>{{ review.comment }}</p>
+                <small class="muted">By {{ review.reviewer.username }}</small>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="muted">No reviews yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .profile-container {
+        padding: 3rem;
+    }
+
+    .profile-header {
+        display: flex;
+        gap: 3rem;
+        margin-bottom: 4rem;
+        align-items: center;
+        border-bottom: 1px solid var(--glass-border);
+        padding-bottom: 3rem;
+    }
+
+    .profile-img-large {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    .location {
+        color: var(--text-muted);
+        margin: 0.5rem 0 1.5rem;
+    }
+
+    .skills-tags {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .skill-tag {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+
+    .profile-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+
+    .profile-about,
+    .profile-reviews {
+        padding: 2rem;
+    }
+
+    .profile-about h3,
+    .profile-reviews h3 {
+        margin-bottom: 1.5rem;
+    }
+
+    .review-item {
+        padding: 1rem 0;
+    }
+
+    .border-bottom {
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .rating {
+        color: #fbbf24;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}

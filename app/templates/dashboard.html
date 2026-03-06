@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h2>Welcome, {{ current_user.username }}</h2>
+    <a href="{{ url_for('jobs.post_job') }}" class="btn-primary">Post a New Job</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card glass accent">
+        <h3>${{ "%.2f"|format(current_user.balance) }}</h3>
+        <p>Wallet Balance</p>
+    </div>
+    <div class="stat-card glass">
+        <h3>{{ current_user.notifications|selectattr('is_read', 'equalto', False)|list|length }}</h3>
+        <p>New Notifications</p>
+    </div>
+    <div class="stat-card glass">
+        <h3>{{ jobs|length }}</h3>
+        <p>Jobs Posted</p>
+    </div>
+    <div class="stat-card glass">
+        <h3>{{ apps|length }}</h3>
+        <p>Apps Sent</p>
+    </div>
+</div>
+
+<div class="dashboard-sections">
+    <div class="section glass footer-full">
+        <h3>Recent Notifications</h3>
+        <div class="mini-list">
+            {% for note in current_user.notifications|sort(attribute='created_at', reverse=True)|batch(5)|first %}
+            <div class="mini-item {% if not note.is_read %}unread{% endif %}">
+                <span>{{ note.message }}</span>
+                <small>{{ note.created_at.strftime('%m-%d %H:%M') }}</small>
+            </div>
+            {% else %}
+            <p class="muted">No notifications.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="section glass">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <form action="{{ url_for('main.add_funds') }}" method="POST" class="add-funds-form">
+                <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.3rem;">Add Funds:</p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="number" name="amount" placeholder="Amt" min="1" step="0.01" required
+                        style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 4px; padding: 0.4rem; width: 100%;">
+                    <button type="submit" class="btn-primary"
+                        style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Add</button>
+                </div>
+            </form>
+            <form action="{{ url_for('main.withdraw_funds') }}" method="POST" class="add-funds-form">
+                <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.3rem;">Withdraw:</p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="number" name="amount" placeholder="Amt" min="1" step="0.01" required
+                        style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 4px; padding: 0.4rem; width: 100%;">
+                    <button type="submit" class="btn-outline"
+                        style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Withdraw</button>
+                </div>
+            </form>
+        </div>
+        <div class="mini-list" style="margin-top: 1.5rem;">
+            <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.5rem;">Quick Pay:</p>
+            {% for job in jobs if job.status == 'open' %}
+            <div class="mini-item">
+                <span>{{ job.title }}</span>
+                <form action="{{ url_for('main.pay_job', job_id=job.id) }}" method="POST">
+                    <button type="submit" class="btn-outline btn-sm" {% if current_user.balance < job.budget %}disabled
+                        title="Insufficient Funds" {% endif %}>Pay ${{ job.budget }}</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="section glass">
+        <h3>My Posted Jobs</h3>
+        {% if jobs %}
+        <div class="mini-list">
+            {% for job in jobs %}
+            <div class="mini-item">
+                <span>{{ job.title }}</span>
+                <span class="badge {{ job.status }}">{{ job.status }}</span>
+                <a href="{{ url_for('jobs.job_detail', job_id=job.id) }}">View</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="muted">You haven't posted any jobs yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="section glass">
+        <h3>My Applications</h3>
+        {% if apps %}
+        <div class="mini-list">
+            {% for app in apps %}
+            <div class="mini-item">
+                <span>{{ app.job.title }}</span>
+                <span class="badge {{ app.status }}">{{ app.status }}</span>
+                <a href="{{ url_for('jobs.job_detail', job_id=app.job.id) }}">View Job</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="muted">You haven't applied to any jobs yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="section glass" style="grid-column: span 2;">
+        <h3>Recent Transactions</h3>
+        {% if transactions %}
+        <div class="table-responsive">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                <thead>
+                    <tr
+                        style="text-align: left; border-bottom: 2px solid var(--glass-border); color: var(--text-muted); font-size: 0.85rem;">
+                        <th style="padding: 0.8rem 0;">Description</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                    <tr style="border-bottom: 1px solid var(--glass-border);">
+                        <td style="padding: 1rem 0;">{{ tx.description }}</td>
+                        <td>
+                            <span class="badge {{ tx.type }}">
+                                {{ tx.type|upper }}
+                            </span>
+                        </td>
+                        <td class="tx-amount {{ tx.type }}">
+                            {% if tx.type == 'credit' %}+{% else %}-{% endif %}${{ "%.2f"|format(tx.amount) }}
+                        </td>
+                        <td style="color: var(--text-muted); font-size: 0.85rem;">{{ tx.timestamp.strftime('%m/%d
+                            %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="muted" style="margin-top: 1rem;">No transactions available.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .stat-card h3 {
+        font-size: 2rem;
+        color: var(--primary);
+    }
+
+    .dashboard-sections {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+
+    .section {
+        padding: 1.5rem;
+    }
+
+    .section h3 {
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--glass-border);
+        padding-bottom: 0.5rem;
+    }
+
+    .mini-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .badge {
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+
+    .badge.open,
+    .badge.pending {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+    }
+
+    .badge.completed,
+    .badge.accepted,
+    .badge.in_progress {
+        background: rgba(34, 197, 94, 0.2);
+        color: #4ade80;
+    }
+
+    .badge.closed,
+    .badge.rejected {
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+    }
+
+    .badge.credit {
+        background: rgba(34, 197, 94, 0.1);
+        color: #4ade80;
+        border: 1px solid currentColor;
+        font-size: 0.7rem;
+    }
+
+    .badge.debit {
+        background: rgba(239, 68, 68, 0.1);
+        color: #f87171;
+        border: 1px solid currentColor;
+        font-size: 0.7rem;
+    }
+
+    .tx-amount {
+        font-weight: bold;
+    }
+
+    .tx-amount.credit {
+        color: #4ade80;
+    }
+
+    .tx-amount.debit {
+        color: #f87171;
+    }
+
+    .muted {
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}

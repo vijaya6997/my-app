@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="inbox-container glass slide-in">
+    <div class="inbox-sidebar" style="width: 100%;">
+        <h2 style="border: none;">Messages</h2>
+        <div class="chat-list">
+            {% for user in chat_users %}
+            <a href="{{ url_for('messages.chat', username=user.username) }}" class="chat-item">
+                <div class="chat-avatar">UID</div>
+                <div class="chat-info">
+                    <span class="chat-name">{{ user.username }}</span>
+                </div>
+            </a>
+            {% endfor %}
+            {% if not chat_users %}
+            <div class="chat-empty" style="padding: 4rem;">
+                <p>You haven't messaged anyone yet. Start by browsing jobs!</p>
+                <a href="{{ url_for('jobs.list_jobs') }}" class="btn-primary"
+                    style="margin-top: 1rem; display: inline-block;">Browse Jobs</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="job-detail-container">
+    <div class="job-detail-main glass slide-in">
+        <div class="detail-header">
+            <div>
+                <h1>{{ job.title }}</h1>
+                <p class="meta">Posted by <a href="{{ url_for('main.profile', username=job.poster.username) }}">{{
+                        job.poster.username }}</a> on {{ job.created_at.strftime('%Y-%m-%d') }}</p>
+            </div>
+            <div class="budget-tag">${{ job.budget }}</div>
+        </div>
+
+        <div class="detail-section">
+            <h3>Description</h3>
+            <p>{{ job.description }}</p>
+            {% if job.attachment_path %}
+            <div class="attachment-link"
+                style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.5rem;">Job Reference Attachment:</p>
+                <a href="{{ url_for('static', filename='uploads/' + job.attachment_path) }}" target="_blank"
+                    style="color: var(--primary); text-decoration: none; font-size: 0.9rem;">
+                    📎 View Job Details PDF/Image
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if job.status == 'open' %}
+        {% if job.applications %}
+        <div class="apply-section glass status-card">
+            <h3>Application Pending</h3>
+            <p class="muted">This task already has an applicant. In accordance with our "First-Come, First-Served"
+                policy, the client is currently reviewing the first applicant. No further applications are allowed.</p>
+        </div>
+        {% elif current_user.is_authenticated and current_user.id != job.poster_id %}
+        <div class="apply-section glass" id="apply">
+            <h3>Apply for this Task</h3>
+            <form action="{{ url_for('jobs.apply_job', job_id=job.id) }}" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Why should we hire you?</label>
+                    <textarea name="cover_letter" rows="4" required
+                        placeholder="Write a brief cover letter..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Attachment (Image, PDF, Doc)</label>
+                    <input type="file" name="attachment" class="file-input">
+                </div>
+                <button type="submit" class="btn-primary">Submit Application</button>
+                <a href="{{ url_for('messages.chat', username=job.poster.username) }}" class="btn-outline">Message
+                    Poster</a>
+            </form>
+        </div>
+        {% elif current_user.is_authenticated and current_user.id == job.poster_id %}
+        <div class="apply-section glass">
+            <p class="muted">You posted this job. You can manage applications in the sidebar.</p>
+        </div>
+        {% elif not current_user.is_authenticated %}
+        <div class="apply-section glass">
+            <p>Please <a href="{{ url_for('auth.login') }}" style="color: var(--primary);">Login</a> to apply for this
+                job.</p>
+        </div>
+        {% endif %}
+        {% elif job.status == 'in_progress' %}
+        <div class="apply-section glass status-card in-progress">
+            <h3>Task in Progress</h3>
+            {% if current_user.id == job.worker_id %}
+            <p class="premium-text" style="color: var(--primary); font-weight: 600;">You are currently working on this
+                task.</p>
+            <form action="{{ url_for('jobs.submit_work', job_id=job.id) }}" method="POST" enctype="multipart/form-data"
+                style="margin-top: 1.5rem;">
+                <div class="form-group">
+                    <label>Submission Details / Report</label>
+                    <textarea name="submission_body" rows="4" required
+                        placeholder="Describe the work completed..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Work File (Code, ZIP, PDF, etc.)</label>
+                    <input type="file" name="submission_attachment" class="file-input">
+                </div>
+                <button type="submit" class="btn-primary">Submit Final Work</button>
+            </form>
+            {% else %}
+            <p class="muted">This task has been assigned to <strong>{{ job.worker.username }}</strong>.</p>
+            {% endif %}
+        </div>
+        {% elif job.status == 'submitted' %}
+        <div class="apply-section glass status-card in-progress" style="border-color: #f59e0b;">
+            <h3>Work Submitted</h3>
+            {% if current_user.id == job.worker_id %}
+            <p class="muted">You have submitted your work. Waiting for client approval and payment.</p>
+            {% else %}
+            <p class="muted">The worker has submitted their work and is waiting for your review.</p>
+            {% endif %}
+
+            <div class="submission-preview glass" style="margin-top: 1rem; padding: 1rem;">
+                <p><strong>Submission Report:</strong></p>
+                <p class="muted" style="font-size: 0.9rem;">{{ job.submission_body }}</p>
+                {% if job.submission_attachment %}
+                <a href="{{ url_for('static', filename='uploads/' + job.submission_attachment) }}" target="_blank"
+                    class="badge success" style="margin-top: 0.5rem; display: inline-block;">📎 Download Work Files</a>
+                {% endif %}
+            </div>
+        </div>
+        {% elif job.status == 'completed' %}
+        <div class="apply-section glass status-card completed">
+            <h3>Task Completed</h3>
+            <p class="muted">This task has been successfully completed and paid.</p>
+            <div class="submission-preview glass"
+                style="margin-top: 1rem; padding: 1rem; background: rgba(0,255,100,0.05);">
+                <p><strong>Final Submission:</strong></p>
+                <p class="muted" style="font-size: 0.9rem;">{{ job.submission_body }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if current_user.id == job.poster_id %}
+    <div class="applications-sidebar glass slide-in">
+        <h3>Task Management</h3>
+        {% if job.status == 'open' %}
+        {% if job.applications %}
+        {% for app in job.applications %}
+        <div class="app-card glass {{ 'accepted' if app.status == 'accepted' else '' }}">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <p><strong>{{ app.applicant.username }}</strong></p>
+            </div>
+            <p class="muted" style="margin-top: 0.5rem;">{{ app.cover_letter }}</p>
+            <div class="app-actions">
+                <form action="{{ url_for('jobs.accept_application', app_id=app.id) }}" method="POST">
+                    <button type="submit" class="btn-primary btn-sm">Assign Work</button>
+                </form>
+                <a href="{{ url_for('messages.chat', username=app.applicant.username) }}"
+                    class="btn-outline btn-sm">Message</a>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="muted">Waiting for applicants...</p>
+        {% endif %}
+        {% elif job.status == 'in_progress' %}
+        <div class="stat-card glass" style="padding: 1rem; text-align: left;">
+            <p class="muted">Assigned to: <strong>{{ job.worker.username }}</strong></p>
+            <p style="font-size: 0.8rem; margin-top: 0.5rem;">Waiting for the worker to submit the final work files.</p>
+            <a href="{{ url_for('messages.chat', username=job.worker.username) }}" class="btn-outline btn-sm"
+                style="display: block; text-align: center; margin-top: 1rem;">Message Worker</a>
+        </div>
+        {% elif job.status == 'submitted' %}
+        <div class="stat-card glass" style="padding: 1rem; text-align: left; border-color: #f59e0b;">
+            <p><strong>Review Submission</strong></p>
+            <p style="font-size: 0.8rem; margin: 0.5rem 0;">Review the work submitted by {{ job.worker.username }}. If
+                everything is correct, release the payment.</p>
+            <form action="{{ url_for('main.pay_job', job_id=job.id) }}" method="POST">
+                <button type="submit" class="btn-primary" style="width: 100%;"
+                    onclick="return confirm('Release payment of ${{ job.budget }}?')">Approve & Release Payment</button>
+            </form>
+        </div>
+        {% elif job.status == 'completed' %}
+        <div class="stat-card glass accent" style="padding: 1rem; text-align: left;">
+            <p><strong>Job Completed</strong></p>
+            <p style="font-size: 0.8rem;">Payment of ${{ job.budget }} has been released to {{ job.worker.username }}.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .job-detail-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+    }
+
+    .job-detail-main {
+        padding: 3rem;
+    }
+
+    .budget-tag {
+        font-size: 2rem;
+        color: #4ade80;
+        font-weight: 700;
+    }
+
+    .detail-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3rem;
+        border-bottom: 1px solid var(--glass-border);
+        padding-bottom: 2rem;
+    }
+
+    .meta {
+        color: var(--text-muted);
+    }
+
+    .detail-section {
+        margin-bottom: 3rem;
+    }
+
+    .detail-section h3 {
+        margin-bottom: 1rem;
+    }
+
+    .apply-section {
+        padding: 2rem;
+        margin-top: 2rem;
+    }
+
+    .applications-sidebar {
+        padding: 2rem;
+        align-self: flex-start;
+    }
+
+    .app-card {
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .app-actions {
+        margin-top: 1rem;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-sm {
+        font-size: 0.8rem;
+        padding: 0.4rem 1rem;
+    }
+</style>
+{% endblock %}
