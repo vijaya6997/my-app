@@ -45,8 +45,11 @@ def create_app(config_class=Config):
     app.register_blueprint(jobs)
     app.register_blueprint(messages)
 
-    # Ensure upload directory exists
-    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-        os.makedirs(app.config['UPLOAD_FOLDER'])
+    # Ensure upload directory exists (safe for read-only deploy environments)
+    try:
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            os.makedirs(app.config['UPLOAD_FOLDER'])
+    except OSError:
+        pass  # On read-only filesystems (some cloud platforms), skip silently
 
     return app

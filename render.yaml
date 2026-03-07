@@ -1,0 +1,19 @@
+# Mini Freelance App - Render deployment config
+services:
+  - type: web
+    name: mini-freelance
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mini-freelance-db
+          property: connectionString
+
+databases:
+  - name: mini-freelance-db
+    databaseName: freelance_db
+    user: freelance_user
