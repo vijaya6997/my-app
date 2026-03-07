@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     user_type = db.Column(db.String(20), default='seller') # buyer, seller
     balance = db.Column(db.Float, default=0.0)
+    platform_balance = db.Column(db.Float, default=0.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     notifications = db.relationship('Notification', backref='user', lazy=True)

@@ -6,9 +6,11 @@
     <a href="{{ url_for('jobs.post_job') }}" class="btn-primary">Post a New Job</a>
 </div>
 
+
+
 <div class="stats-grid">
     <div class="stat-card glass accent">
-        <h3>${{ "%.2f"|format(current_user.balance) }}</h3>
+        <h3>₹{{ "%.2f"|format(current_user.balance) }}</h3>
         <p>Wallet Balance</p>
     </div>
     <div class="stat-card glass">
@@ -51,7 +53,7 @@
                 </div>
             </form>
             <form action="{{ url_for('main.withdraw_funds') }}" method="POST" class="add-funds-form">
-                <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.3rem;">Withdraw:</p>
+                <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.3rem;">Withdraw (-5% Fee):</p>
                 <div style="display: flex; gap: 0.5rem;">
                     <input type="number" name="amount" placeholder="Amt" min="1" step="0.01" required
                         style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 4px; padding: 0.4rem; width: 100%;">
@@ -67,7 +69,7 @@
                 <span>{{ job.title }}</span>
                 <form action="{{ url_for('main.pay_job', job_id=job.id) }}" method="POST">
                     <button type="submit" class="btn-outline btn-sm" {% if current_user.balance < job.budget %}disabled
-                        title="Insufficient Funds" {% endif %}>Pay ${{ job.budget }}</button>
+                        title="Insufficient Funds" {% endif %}>Pay ₹{{ job.budget }}</button>
                 </form>
             </div>
             {% endfor %}
@@ -131,7 +133,7 @@
                             </span>
                         </td>
                         <td class="tx-amount {{ tx.type }}">
-                            {% if tx.type == 'credit' %}+{% else %}-{% endif %}${{ "%.2f"|format(tx.amount) }}
+                            {% if tx.type == 'credit' %}+{% else %}-{% endif %}₹{{ "%.2f"|format(tx.amount) }}
                         </td>
                         <td style="color: var(--text-muted); font-size: 0.85rem;">{{ tx.timestamp.strftime('%m/%d
                             %H:%M') }}</td>

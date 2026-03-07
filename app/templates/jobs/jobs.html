@@ -18,7 +18,7 @@
     <div class="job-card glass slide-in">
         <div class="job-card-header">
             <h3>{{ job.title }}</h3>
-            <span class="budget">${{ job.budget }}</span>
+            <span class="budget">₹{{ job.budget }}</span>
         </div>
         <p class="job-desc">{{ job.description[:150] }}{% if job.description|length > 150 %}...{% endif %}</p>
         <div class="job-card-footer">

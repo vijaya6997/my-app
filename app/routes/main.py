@@ -20,6 +20,28 @@ def dashboard():
     txs = Transaction.query.filter_by(user_id=current_user.id).order_by(Transaction.timestamp.desc()).limit(10).all()
     return render_template('dashboard.html', jobs=jobs, apps=apps, transactions=txs)
 
+@main.route('/wallet/admin_withdraw', methods=['POST'])
+@login_required
+def admin_withdraw():
+    if not current_user.is_admin:
+        flash('Unauthorized.', 'danger')
+        return redirect(url_for('main.dashboard'))
+        
+    amount = float(request.form.get('amount', 0))
+    if amount <= 0:
+        flash('Invalid amount.', 'danger')
+    elif current_user.platform_balance < amount:
+        flash('Insufficient platform balance.', 'danger')
+    else:
+        current_user.platform_balance -= amount
+        from app.models import Transaction
+        tx = Transaction(user_id=current_user.id, amount=amount, type='debit', description='Platform Admin Withdrawal')
+        db.session.add(tx)
+        db.session.commit()
+        flash(f'Successfully withdrew ₹{amount:.2f} from the Platform Wallet!', 'success')
+        
+    return redirect(url_for('main.dashboard'))
+
 @main.route('/wallet/add', methods=['POST'])
 @login_required
 def add_funds():
@@ -30,7 +52,7 @@ def add_funds():
         tx = Transaction(user_id=current_user.id, amount=amount, type='credit', description='Added funds')
         db.session.add(tx)
         db.session.commit()
-        flash(f'Successfully added ${amount:.2f} to your wallet!', 'success')
+        flash(f'Successfully added ₹{amount:.2f} to your wallet!', 'success')
     return redirect(url_for('main.dashboard'))
 
 @main.route('/wallet/withdraw', methods=['POST'])
@@ -42,13 +64,40 @@ def withdraw_funds():
     elif current_user.balance < amount:
         flash('Insufficient balance for withdrawal.', 'danger')
     else:
-        current_user.balance -= amount
         from app.models import Transaction
-        tx = Transaction(user_id=current_user.id, amount=amount, type='debit', description='Withdrawal')
-        db.session.add(tx)
-        db.session.commit()
-        flash(f'Successfully withdrew ${amount:.2f}!', 'success')
+        
+        # Calculate 5% withdrawal fee
+        admin = User.query.filter_by(is_admin=True).first()
+        
+        if admin and current_user.id != admin.id:
+            withdrawal_fee = amount * 0.05
+            actual_withdrawal = amount - withdrawal_fee
+            
+            # Update balances
+            current_user.balance -= amount
+            admin.platform_balance += withdrawal_fee
+            
+            # Record transactions
+            tx = Transaction(user_id=current_user.id, amount=amount, type='debit', 
+                             description=f'Withdrawal (includes 5% fee)')
+            tx_admin = Transaction(user_id=admin.id, amount=withdrawal_fee, type='credit', 
+                                   description=f"5% Platform Fee from Withdrawal ({current_user.username})")
+            
+            db.session.add(tx)
+            db.session.add(tx_admin)
+            db.session.commit()
+            flash(f'Successfully withdrew ₹{actual_withdrawal:.2f}! (A 5% platform fee of ₹{withdrawal_fee:.2f} was applied)', 'success')
+            
+        else:
+            # Admins don't pay withdrawal fees
+            current_user.balance -= amount
+            tx = Transaction(user_id=current_user.id, amount=amount, type='debit', description='Withdrawal')
+            db.session.add(tx)
+            db.session.commit()
+            flash(f'Successfully withdrew ₹{amount:.2f}!', 'success')
+            
     return redirect(url_for('main.dashboard'))
+
 
 @main.route('/jobs/<int:job_id>/pay', methods=['POST'])
 @login_required
@@ -81,23 +130,45 @@ def pay_job(job_id):
         flash('Insufficient balance in wallet.', 'danger')
         return redirect(url_for('main.dashboard'))
     
-    # Perform secure double-entry transaction
-    current_user.balance -= job.budget
-    seller.balance += job.budget
-    job.status = 'completed'
+    # Calculate and distribute funds
+    admin = User.query.filter_by(is_admin=True).first()
     
-    # Record debit for buyer
-    tx_debit = Transaction(user_id=current_user.id, amount=job.budget, type='debit', 
-                           description=f"Paid {seller.username} for '{job.title}'")
-    # Record credit for seller
-    tx_credit = Transaction(user_id=seller.id, amount=job.budget, type='credit', 
-                            description=f"Received payment from {current_user.username} for '{job.title}'")
-    
-    db.session.add(tx_debit)
-    db.session.add(tx_credit)
+    if admin and seller.id != admin.id:
+        commission = job.budget * 0.05
+        seller_earnings = job.budget - commission
+        
+        current_user.balance -= job.budget
+        seller.balance += seller_earnings
+        admin.platform_balance += commission
+        
+        job.status = 'completed'
+        
+        tx_debit = Transaction(user_id=current_user.id, amount=job.budget, type='debit', 
+                               description=f"Paid {seller.username} for '{job.title}'")
+        tx_credit = Transaction(user_id=seller.id, amount=seller_earnings, type='credit', 
+                                description=f"Received payment for '{job.title}' (after 5% fee)")
+        tx_admin = Transaction(user_id=admin.id, amount=commission, type='credit', 
+                               description=f"5% Platform Fee from '{job.title}'")
+        
+        db.session.add(tx_debit)
+        db.session.add(tx_credit)
+        db.session.add(tx_admin)
+    else:
+        current_user.balance -= job.budget
+        seller.balance += job.budget
+        job.status = 'completed'
+        
+        tx_debit = Transaction(user_id=current_user.id, amount=job.budget, type='debit', 
+                               description=f"Paid {seller.username} for '{job.title}'")
+        tx_credit = Transaction(user_id=seller.id, amount=job.budget, type='credit', 
+                                description=f"Received payment from {current_user.username} for '{job.title}'")
+        
+        db.session.add(tx_debit)
+        db.session.add(tx_credit)
+        
     db.session.commit()
     
-    flash(f'Payment of ${job.budget:.2f} sent to {seller.username}!', 'success')
+    flash(f'Payment of ₹{job.budget:.2f} sent to {seller.username}!', 'success')
     return redirect(url_for('main.dashboard'))
 
 @main.route('/profile/<username>')

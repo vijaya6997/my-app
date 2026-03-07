@@ -9,7 +9,7 @@
                 <p class="meta">Posted by <a href="{{ url_for('main.profile', username=job.poster.username) }}">{{
                         job.poster.username }}</a> on {{ job.created_at.strftime('%Y-%m-%d') }}</p>
             </div>
-            <div class="budget-tag">${{ job.budget }}</div>
+            <div class="budget-tag">₹{{ job.budget }}</div>
         </div>
 
         <div class="detail-section">
@@ -153,13 +153,13 @@
                 everything is correct, release the payment.</p>
             <form action="{{ url_for('main.pay_job', job_id=job.id) }}" method="POST">
                 <button type="submit" class="btn-primary" style="width: 100%;"
-                    onclick="return confirm('Release payment of ${{ job.budget }}?')">Approve & Release Payment</button>
+                    onclick="return confirm('Release payment of ₹{{ job.budget }}?')">Approve & Release Payment</button>
             </form>
         </div>
         {% elif job.status == 'completed' %}
         <div class="stat-card glass accent" style="padding: 1rem; text-align: left;">
             <p><strong>Job Completed</strong></p>
-            <p style="font-size: 0.8rem;">Payment of ${{ job.budget }} has been released to {{ job.worker.username }}.
+            <p style="font-size: 0.8rem;">Payment of ₹{{ job.budget }} has been released to {{ job.worker.username }}.
             </p>
         </div>
         {% endif %}

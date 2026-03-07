@@ -1,12 +1,12 @@
 :root {
-    --primary: #8b5cf6;
-    --secondary: #6366f1;
-    --bg-dark: #0f0720;
-    --bg-card: rgba(31, 21, 52, 0.7);
-    --text-main: #f5f3ff;
-    --text-muted: #a78bfa;
-    --accent: #f472b6;
-    --glass-border: rgba(255, 255, 255, 0.1);
+    --primary: #00e5ff;
+    --secondary: #0055ff;
+    --bg-dark: #09090e;
+    --bg-card: rgba(18, 18, 28, 0.7);
+    --text-main: #f0f4f8;
+    --text-muted: #94a3b8;
+    --accent: #ff2a5f;
+    --glass-border: rgba(0, 229, 255, 0.15);
 }
 
 * {
@@ -18,8 +18,9 @@
 body {
     font-family: 'Outfit', sans-serif;
     background-color: var(--bg-dark);
-    background-image: radial-gradient(circle at top right, #4c1d95, transparent),
-        radial-gradient(circle at bottom left, #1e1b4b, transparent);
+    background-image:
+        radial-gradient(circle at top right, rgba(0, 85, 255, 0.25), transparent 50%),
+        radial-gradient(circle at bottom left, rgba(0, 229, 255, 0.15), transparent 40%);
     color: var(--text-main);
     line-height: 1.6;
     min-height: 100vh;
@@ -27,10 +28,17 @@ body {
 
 .glass {
     background: var(--bg-card);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass:hover {
+    border-color: rgba(0, 229, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(0, 229, 255, 0.08);
 }
 
 .navbar {
@@ -89,11 +97,13 @@ body {
     text-decoration: none;
     color: var(--text-muted);
     font-weight: 500;
-    transition: 0.3s;
+    transition: all 0.3s ease;
 }
 
 .nav-links a:hover {
     color: var(--primary);
+    text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+    transform: translateY(-1px);
 }
 
 .btn-primary {
@@ -104,6 +114,12 @@ body {
     border: none;
     cursor: pointer;
     font-weight: 600;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4);
 }
 
 .btn-outline {
@@ -111,6 +127,14 @@ body {
     padding: 0.6rem 1.5rem;
     border-radius: 8px;
     color: var(--primary) !important;
+    transition: all 0.3s ease;
+    background: transparent;
+}
+
+.btn-outline:hover {
+    background: rgba(0, 229, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.2);
 }
 
 .content-container {
