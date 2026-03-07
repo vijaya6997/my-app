@@ -2,41 +2,92 @@
 
 {% block content %}
 <div class="auth-container">
-    <div class="auth-card glass slide-in">
-        <h2 style="margin-bottom: 1.5rem; text-align: center;">Join <span>Mini Freelance</span></h2>
-        <form method="POST">
+    <div class="auth-card glass slide-in" style="max-width: 480px;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h2>Join <span>Mini Freelance</span></h2>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem;">Create your free account today
+            </p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.register') }}" id="register-form">
             <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username" required>
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Choose a username"
+                    autocomplete="username">
             </div>
             <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" required>
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required placeholder="Enter your email"
+                    autocomplete="email">
             </div>
             <div class="form-group">
-                <label>Location</label>
-                <input type="text" name="location" placeholder="e.g. London, UK">
+                <label for="location">Location <span
+                        style="color: var(--text-muted); font-weight: 400;">(optional)</span></label>
+                <input type="text" id="location" name="location" placeholder="e.g. Hyderabad, India">
             </div>
             <div class="form-group">
-                <label>Primary Skills (e.g. Design, Cleaning)</label>
-                <input type="text" name="skills" placeholder="Skills separated by commas">
+                <label for="skills">Skills <span
+                        style="color: var(--text-muted); font-weight: 400;">(optional)</span></label>
+                <input type="text" id="skills" name="skills" placeholder="e.g. Design, Plumbing, Cooking">
             </div>
             <div class="form-group">
-                <label>I want to:</label>
-                <select name="user_type" class="custom-select">
-                    <option value="seller">Offer Services (Seller)</option>
-                    <option value="buyer">Hire Talent (Buyer)</option>
+                <label for="user_type">I want to:</label>
+                <select id="user_type" name="user_type" class="custom-select">
+                    <option value="seller">Offer Services (Worker)</option>
+                    <option value="buyer">Hire Talent (Client)</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" required>
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Choose a strong password"
+                    autocomplete="new-password">
             </div>
-            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">Register Now</button>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required
+                    placeholder="Repeat your password" autocomplete="new-password">
+                <small id="pw-match-msg" style="color: var(--accent); display: none;">Passwords do not match!</small>
+            </div>
+            <button type="submit" class="btn-primary" id="register-btn"
+                style="width: 100%; padding: 0.8rem; font-size: 1rem; margin-top: 0.5rem;">
+                Create Account
+            </button>
         </form>
+
         <p style="text-align: center; margin-top: 1.5rem; color: var(--text-muted);">
-            Already have an account? <a href="{{ url_for('auth.login') }}" style="color: var(--primary);">Login here</a>
+            Already have an account? <a href="{{ url_for('auth.login') }}"
+                style="color: var(--primary); font-weight: 600;">Login here</a>
         </p>
     </div>
 </div>
+
+<script>
+    const pw = document.getElementById('password');
+    const cpw = document.getElementById('confirm_password');
+    const msg = document.getElementById('pw-match-msg');
+    const btn = document.getElementById('register-btn');
+
+    function checkPasswords() {
+        if (cpw.value && pw.value !== cpw.value) {
+            msg.style.display = 'block';
+            btn.disabled = true;
+        } else {
+            msg.style.display = 'none';
+            btn.disabled = false;
+        }
+    }
+
+    pw.addEventListener('input', checkPasswords);
+    cpw.addEventListener('input', checkPasswords);
+
+    document.getElementById('register-form').addEventListener('submit', function (e) {
+        if (pw.value !== cpw.value) {
+            e.preventDefault();
+            msg.style.display = 'block';
+            return;
+        }
+        btn.textContent = 'Creating account...';
+        btn.disabled = true;
+    });
+</script>
 {% endblock %}

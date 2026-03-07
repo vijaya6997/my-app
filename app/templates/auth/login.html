@@ -3,25 +3,68 @@
 {% block content %}
 <div class="auth-container">
     <div class="auth-card glass slide-in">
-        <h2 style="margin-bottom: 1.5rem; text-align: center;">Welcome <span>Back</span></h2>
-        <form method="POST">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h2>Welcome <span>Back</span></h2>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem;">Sign in to your Mini Freelance
+                account</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.login') }}" id="login-form">
             <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" required>
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required placeholder="Enter your email" autocomplete="email"
+                    style="font-size: 1rem;">
             </div>
             <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" required>
+                <label for="password">Password</label>
+                <div style="position: relative;">
+                    <input type="password" id="password" name="password" required placeholder="Enter your password"
+                        autocomplete="current-password" style="font-size: 1rem; padding-right: 2.5rem;">
+                    <span onclick="togglePassword()" id="eye-icon"
+                        style="position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted); font-size: 1.1rem; user-select: none;">
+                        👁
+                    </span>
+                </div>
             </div>
-            <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; cursor: pointer;">
-                <input type="checkbox" name="remember" style="width: auto;"> Remember me
+            <label
+                style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; cursor: pointer; color: var(--text-muted);">
+                <input type="checkbox" name="remember" style="width: auto; accent-color: var(--primary);"> Remember me
             </label>
-            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">Login</button>
+            <button type="submit" class="btn-primary" id="login-btn"
+                style="width: 100%; padding: 0.8rem; font-size: 1rem;">
+                Login
+            </button>
         </form>
+
         <p style="text-align: center; margin-top: 1.5rem; color: var(--text-muted);">
-            Don't have an account? <a href="{{ url_for('auth.register') }}" style="color: var(--primary);">Register
-                here</a>
+            Don't have an account? <a href="{{ url_for('auth.register') }}"
+                style="color: var(--primary); font-weight: 600;">Register here</a>
         </p>
     </div>
 </div>
+
+<script>
+    function togglePassword() {
+        const input = document.getElementById('password');
+        const icon = document.getElementById('eye-icon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.textContent = '🙈';
+        } else {
+            input.type = 'password';
+            icon.textContent = '👁';
+        }
+    }
+
+    // Show spinner on submit
+    document.getElementById('login-form').addEventListener('submit', function () {
+        const btn = document.getElementById('login-btn');
+        btn.textContent = 'Logging in...';
+        btn.disabled = true;
+        setTimeout(() => {
+            btn.textContent = 'Login';
+            btn.disabled = false;
+        }, 3000);
+    });
+</script>
 {% endblock %}

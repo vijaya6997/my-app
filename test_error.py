@@ -1,29 +1,33 @@
-from app import create_app
-import traceback
+from app import create_app, db
+from app.models import User
 
 app = create_app()
-app.config['TESTING'] = True
-app.config['PROPAGATE_EXCEPTIONS'] = True
+with app.app_context():
+    # Re-add the users that existed before (seshu, ram, sk71)
+    # Only add if they don't already exist
 
-with app.test_client() as client:
-    # Step 1: Login
-    r = client.post('/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    }, follow_redirects=False)
-    print("LOGIN:", r.status_code, r.headers.get('Location'))
+    users_to_add = [
+        {'username': 'seshu', 'email': 'seshu@gmail.com', 'password': 'seshu123', 'is_admin': True},
+        {'username': 'ram', 'email': 'ram@gmail.com', 'password': 'ram123', 'is_admin': False},
+        {'username': 'sk71', 'email': 'sk@gmail.com', 'password': 'sk123', 'is_admin': False},
+    ]
 
-    # Step 2: Try each key route
-    for route in ['/', '/dashboard', '/jobs', '/login', '/register']:
-        try:
-            r = client.get(route, follow_redirects=True)
-            status = r.status_code
-            print(f"GET {route}: {status}")
-            if status == 500:
-                text = r.data.decode('utf-8')
-                print("--- 500 BODY ---")
-                print(text[:3000])
-                print("--- END ---")
-        except Exception as e:
-            print(f"GET {route}: EXCEPTION")
-            traceback.print_exc()
+    for u_data in users_to_add:
+        existing = User.query.filter_by(email=u_data['email']).first()
+        if not existing:
+            user = User(
+                username=u_data['username'],
+                email=u_data['email'],
+                is_admin=u_data['is_admin']
+            )
+            user.set_password(u_data['password'])
+            db.session.add(user)
+            print(f"Added: {u_data['email']}")
+        else:
+            print(f"Already exists: {u_data['email']}")
+
+    db.session.commit()
+
+    print("\n--- All users now in DB ---")
+    for u in User.query.all():
+        print(f"  {u.username} | {u.email} | admin={u.is_admin}")
