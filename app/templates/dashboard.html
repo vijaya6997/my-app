@@ -160,8 +160,14 @@
                         .then(r => r.json())
                         .then(data => {
                             if (data.error) {
-                                alert("Error: " + data.error);
-                                statusText.innerText = "Error generating QR";
+                                let msg = data.error;
+                                if (msg.includes("Authentication failed")) {
+                                    msg = "Invalid Razorpay Keys. Please update your .env file with real API keys!";
+                                }
+                                alert("Error: " + msg);
+                                if (data.traceback) console.error(data.traceback);
+                                statusText.innerText = "Error: " + msg;
+                                statusText.style.color = "#ef4444";
                                 return;
                             }
 
@@ -169,6 +175,7 @@
                             document.getElementById('qr-amount-text').innerText = data.amount;
                             document.getElementById('qr-container').style.display = 'block';
                             statusText.innerText = "Waiting for scanned payment...";
+                            statusText.style.color = "#fbbf24";
 
                             if (pollInterval) clearInterval(pollInterval);
                             pollInterval = setInterval(() => {
@@ -187,7 +194,9 @@
                         })
                         .catch(e => {
                             console.error(e);
-                            alert("An error occurred during QR generation.");
+                            alert("Server connection error during QR generation.");
+                            statusText.innerText = "Connection Error";
+                            statusText.style.color = "#ef4444";
                         });
                 }
             </script>

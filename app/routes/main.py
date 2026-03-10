@@ -109,7 +109,13 @@ def generate_qr():
     if amount <= 0:
         return jsonify({'error': 'Invalid amount'}), 400
         
-    client = razorpay.Client(auth=(current_app.config['RAZORPAY_KEY_ID'], current_app.config['RAZORPAY_KEY_SECRET']))
+    key_id = current_app.config.get('RAZORPAY_KEY_ID')
+    key_secret = current_app.config.get('RAZORPAY_KEY_SECRET')
+    
+    if not key_id or not key_secret or 'YOUR_KEY_HERE' in key_id or 'YourRazorpay' in key_id:
+        return jsonify({'error': 'Razorpay API keys are not configured. Please add them to your .env file or Vercel settings.'}), 400
+        
+    client = razorpay.Client(auth=(key_id, key_secret))
     
     data = {
         "type": "upi_qr",
@@ -132,7 +138,8 @@ def generate_qr():
             'amount': amount
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
 @main.route('/wallet/check_qr_status/<qr_id>')
 @login_required
