@@ -13,6 +13,12 @@
         <h3>₹{{ "%.2f"|format(current_user.balance) }}</h3>
         <p>Wallet Balance</p>
     </div>
+    {% if current_user.is_admin %}
+    <div class="stat-card glass" style="border-color: gold; color: gold;">
+        <h3 style="color: gold;">₹{{ "%.2f"|format(current_user.platform_balance|default(0.0)) }}</h3>
+        <p>Platform Fee</p>
+    </div>
+    {% endif %}
     <div class="stat-card glass">
         <h3>{{ current_user.notifications|selectattr('is_read', 'equalto', False)|list|length }}</h3>
         <p>New Notifications</p>
@@ -61,6 +67,21 @@
                         style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Withdraw</button>
                 </div>
             </form>
+            {% if current_user.is_admin %}
+            <form action="{{ url_for('main.admin_withdraw') }}" method="POST" class="add-funds-form"
+                style="grid-column: span 2;">
+                <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.3rem; color: #fbbf24;">Admin: Withdraw
+                    Platform Fee</p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="number" name="amount" placeholder="Amt" min="1" step="0.01"
+                        max="{{ current_user.platform_balance|default(1000000) }}" required
+                        style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 4px; padding: 0.4rem; width: 100%;">
+                    <button type="submit" class="btn-outline"
+                        style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: #fbbf24; color: #fbbf24;">Admin
+                        Withdraw</button>
+                </div>
+            </form>
+            {% endif %}
         </div>
         <div class="mini-list" style="margin-top: 1.5rem;">
             <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.5rem;">Quick Pay:</p>

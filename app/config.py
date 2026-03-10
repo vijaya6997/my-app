@@ -9,7 +9,7 @@ class Config:
     # Database Configuration
     DATABASE_URL = os.environ.get('DATABASE_URL', '')
     
-    # Fix for Supabase/Heroku/Render postgres:// URIs
+    # Fix for Heroku/Render postgres:// URIs
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     
@@ -17,14 +17,9 @@ class Config:
     if DATABASE_URL.startswith('mysql://'):
         DATABASE_URL = DATABASE_URL.replace('mysql://', 'mysql+pymysql://', 1)
     
-    # Supabase uses PostgreSQL with connection pooling
-    # Add sslmode=require for Supabase if not already present
-    if 'supabase' in DATABASE_URL and 'sslmode' not in DATABASE_URL:
-        separator = '&' if '?' in DATABASE_URL else '?'
-        DATABASE_URL = DATABASE_URL + separator + 'sslmode=require'
-    
     # Fallback to SQLite
     if not DATABASE_URL:
+        # Use /tmp/ for Vercel (read-only filesystem outside /tmp/)
         if os.environ.get('VERCEL'):
             db_path = '/tmp/freelance.db'
         else:
@@ -33,14 +28,6 @@ class Config:
     
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    # Connection pool settings for Supabase/PostgreSQL
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-        'pool_size': 5,
-        'max_overflow': 10,
-    }
 
     # Use /tmp/ for uploads on Vercel
     if os.environ.get('VERCEL'):

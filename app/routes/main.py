@@ -34,11 +34,12 @@ def admin_withdraw():
         flash('Insufficient platform balance.', 'danger')
     else:
         current_user.platform_balance -= amount
+        current_user.balance += amount
         from app.models import Transaction
-        tx = Transaction(user_id=current_user.id, amount=amount, type='debit', description='Platform Admin Withdrawal')
+        tx = Transaction(user_id=current_user.id, amount=amount, type='credit', description='Platform Admin Withdrawal to Wallet')
         db.session.add(tx)
         db.session.commit()
-        flash(f'Successfully withdrew ₹{amount:.2f} from the Platform Wallet!', 'success')
+        flash(f'Successfully transferred ₹{amount:.2f} from the Platform Fee to your Wallet!', 'success')
         
     return redirect(url_for('main.dashboard'))
 
