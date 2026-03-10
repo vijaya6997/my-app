@@ -10,4 +10,5 @@ cryptography==42.0.5
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
 SQLAlchemy==2.0.28
-razorpay==1.4.1
+razorpay==2.0.1
+requests

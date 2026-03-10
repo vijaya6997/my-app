@@ -19,7 +19,8 @@ def create_app(config_class=Config):
         try:
             from sqlalchemy import create_engine
             # Quick check to see if the database server is reachable
-            engine = create_engine(db_uri)
+            # Use a short timeout so we don't hang Vercel's serverless function
+            engine = create_engine(db_uri, connect_args={'connect_timeout': 5})
             engine.connect().close()
             print("Successfully connected to MySQL database!")
         except Exception as e:
