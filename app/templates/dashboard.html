@@ -49,15 +49,82 @@
     </div>
     <div class="section glass">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <form action="{{ url_for('main.add_funds') }}" method="POST" class="add-funds-form">
-                <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.3rem;">Add Funds:</p>
+            <form id="add-funds-form" class="add-funds-form">
+                <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.3rem;">Add Funds (via Razorpay):</p>
                 <div style="display: flex; gap: 0.5rem;">
-                    <input type="number" name="amount" placeholder="Amt" min="1" step="0.01" required
+                    <input type="number" id="fund-amount" placeholder="Amt" min="1" step="0.01" required
                         style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 4px; padding: 0.4rem; width: 100%;">
-                    <button type="submit" class="btn-primary"
-                        style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Add</button>
+                    <button type="button" onclick="initiatePayment()" class="btn-primary"
+                        style="padding: 0.4rem 0.8rem; font-size: 0.8rem; white-space: nowrap;">Pay via
+                        Razorpay</button>
                 </div>
             </form>
+
+            <form id="payment-success-form" action="{{ url_for('main.payment_success') }}" method="POST"
+                style="display: none;">
+                <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+                <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+                <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+                <input type="hidden" name="amount" id="success_amount">
+            </form>
+
+            <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+            <script>
+                function initiatePayment() {
+                    const amount = document.getElementById('fund-amount').value;
+                    if (!amount || amount <= 0) {
+                        alert('Please enter a valid amount');
+                        return;
+                    }
+
+                    fetch("{{ url_for('main.create_order') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                        },
+                        body: "amount=" + amount
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                alert("Error creating order: " + data.error);
+                                return;
+                            }
+
+                            var options = {
+                                "key": data.key_id,
+                                "amount": data.amount,
+                                "currency": data.currency,
+                                "name": "Mini Freelance App",
+                                "description": "Add Funds to Wallet",
+                                "order_id": data.order_id,
+                                "handler": function (response) {
+                                    document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                                    document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                                    document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                                    document.getElementById('success_amount').value = amount;
+                                    document.getElementById('payment-success-form').submit();
+                                },
+                                "prefill": {
+                                    "name": "{{ current_user.username }}",
+                                    "email": "{{ current_user.email }}"
+                                },
+                                "theme": {
+                                    "color": "#3b82f6"
+                                }
+                            };
+                            var rzp1 = new Razorpay(options);
+                            rzp1.on('payment.failed', function (response) {
+                                alert("Payment Failed: " + response.error.description);
+                            });
+                            rzp1.open();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert("An error occurred during payment initialization");
+                        });
+                }
+            </script>
             <form action="{{ url_for('main.withdraw_funds') }}" method="POST" class="add-funds-form">
                 <p class="muted" style="font-size: 0.8rem; margin-bottom: 0.3rem;">Withdraw (-5% Fee):</p>
                 <div style="display: flex; gap: 0.5rem;">

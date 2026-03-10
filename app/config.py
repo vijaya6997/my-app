@@ -37,3 +37,7 @@ class Config:
     
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'zip'}
+
+    # Razorpay Payment Gateway (Test Mode Keys)
+    RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_YourRazorpayTestKey')
+    RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'YourRazorpayTestSecret')

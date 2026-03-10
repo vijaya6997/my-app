@@ -43,17 +43,63 @@ def admin_withdraw():
         
     return redirect(url_for('main.dashboard'))
 
-@main.route('/wallet/add', methods=['POST'])
+import razorpay
+from flask import current_app, jsonify
+
+@main.route('/wallet/create_order', methods=['POST'])
 @login_required
-def add_funds():
+def create_order():
     amount = float(request.form.get('amount', 0))
-    if amount > 0:
+    if amount <= 0:
+        return jsonify({'error': 'Invalid amount'}), 400
+        
+    client = razorpay.Client(auth=(current_app.config['RAZORPAY_KEY_ID'], current_app.config['RAZORPAY_KEY_SECRET']))
+    
+    # Razorpay amount is in paise (Multiply by 100)
+    data = {"amount": int(amount * 100), "currency": "INR", "receipt": f"receipt_{current_user.id}"}
+    try:
+        payment = client.order.create(data=data)
+        return jsonify({
+            'order_id': payment['id'], 
+            'amount': payment['amount'], 
+            'currency': payment['currency'], 
+            'key_id': current_app.config['RAZORPAY_KEY_ID']
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main.route('/wallet/payment_success', methods=['POST'])
+@login_required
+def payment_success():
+    razorpay_payment_id = request.form.get('razorpay_payment_id')
+    razorpay_order_id = request.form.get('razorpay_order_id')
+    razorpay_signature = request.form.get('razorpay_signature')
+    amount_str = request.form.get('amount', '0')
+    
+    if not all([razorpay_payment_id, razorpay_order_id, razorpay_signature]):
+        flash('Payment failed or invalid.', 'danger')
+        return redirect(url_for('main.dashboard'))
+        
+    client = razorpay.Client(auth=(current_app.config['RAZORPAY_KEY_ID'], current_app.config['RAZORPAY_KEY_SECRET']))
+    try:
+        # Verify signature
+        client.utility.verify_payment_signature({
+            'razorpay_order_id': razorpay_order_id,
+            'razorpay_payment_id': razorpay_payment_id,
+            'razorpay_signature': razorpay_signature
+        })
+        
+        amount = float(amount_str)
         current_user.balance += amount
-        from app.models import Transaction
-        tx = Transaction(user_id=current_user.id, amount=amount, type='credit', description='Added funds')
+        from app.models import Transaction # Add this line to import Transaction locally
+        tx = Transaction(user_id=current_user.id, amount=amount, type='credit', description=f'Added funds (Razorpay Txn: {razorpay_payment_id})')
         db.session.add(tx)
         db.session.commit()
-        flash(f'Successfully added ₹{amount:.2f} to your wallet!', 'success')
+        flash(f'Successfully added ₹{amount:.2f} to your wallet via Razorpay!', 'success')
+        
+    except Exception as e:
+        flash(f'Payment verification failed: {str(e)}', 'danger')
+        
     return redirect(url_for('main.dashboard'))
 
 @main.route('/wallet/withdraw', methods=['POST'])
