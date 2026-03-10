@@ -102,6 +102,63 @@ def payment_success():
         
     return redirect(url_for('main.dashboard'))
 
+@main.route('/wallet/generate_qr', methods=['POST'])
+@login_required
+def generate_qr():
+    amount = float(request.form.get('amount', 0))
+    if amount <= 0:
+        return jsonify({'error': 'Invalid amount'}), 400
+        
+    client = razorpay.Client(auth=(current_app.config['RAZORPAY_KEY_ID'], current_app.config['RAZORPAY_KEY_SECRET']))
+    
+    data = {
+        "type": "upi_qr",
+        "name": f"Wallet_{current_user.username}",
+        "usage": "single_use",
+        "fixed_amount": True,
+        "payment_amount": int(amount * 100),
+        "description": f"Add funds for {current_user.username}",
+        "notes": {
+            "user_id": current_user.id
+        }
+    }
+    
+    try:
+        qr_code = client.qr_code.create(data=data)
+        # Store QR ID in session or DB if you want to track it
+        return jsonify({
+            'image_url': qr_code['image_url'],
+            'qr_id': qr_code['id'],
+            'amount': amount
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main.route('/wallet/check_qr_status/<qr_id>')
+@login_required
+def check_qr_status(qr_id):
+    client = razorpay.Client(auth=(current_app.config['RAZORPAY_KEY_ID'], current_app.config['RAZORPAY_KEY_SECRET']))
+    try:
+        payments = client.payment.all({'qr_code_id': qr_id})
+        # Check if any payment associated with this QR is captured/authorized
+        for payment in payments['items']:
+            if payment['status'] in ['captured', 'authorized']:
+                # Credit user if not already credited
+                from app.models import Transaction
+                # Check for existing transaction with this payment ID
+                existing = Transaction.query.filter(Transaction.description.contains(payment['id'])).first()
+                if not existing:
+                    amount = payment['amount'] / 100
+                    current_user.balance += amount
+                    tx = Transaction(user_id=current_user.id, amount=amount, type='credit', description=f"Add funds (QR Code Pay: {payment['id']})")
+                    db.session.add(tx)
+                    db.session.commit()
+                    return jsonify({'status': 'paid', 'amount': amount})
+        
+        return jsonify({'status': 'pending'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @main.route('/wallet/withdraw', methods=['POST'])
 @login_required
 def withdraw_funds():
