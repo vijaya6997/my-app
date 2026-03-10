@@ -124,7 +124,7 @@ def generate_qr():
     }
     
     try:
-        qr_code = client.qr_code.create(data=data)
+        qr_code = client.qrcode.create(data=data)
         # Store QR ID in session or DB if you want to track it
         return jsonify({
             'image_url': qr_code['image_url'],
