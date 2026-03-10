@@ -37,6 +37,16 @@
                 <a href="{{ url_for('auth.login') }}">Login</a>
                 <a href="{{ url_for('auth.register') }}" class="btn-primary">Get Started</a>
                 {% endif %}
+                <div class="theme-switcher glass">
+                    <button class="theme-btn" data-theme="dark-theme" style="background: #09090e;"
+                        title="Cyberpunk"></button>
+                    <button class="theme-btn" data-theme="midnight-theme" style="background: #0f172a;"
+                        title="Midnight"></button>
+                    <button class="theme-btn" data-theme="light-theme" style="background: #f1f5f9;"
+                        title="Light"></button>
+                    <button class="theme-btn" data-theme="sunset-theme" style="background: #1c1917;"
+                        title="Sunset"></button>
+                </div>
             </div>
         </div>
     </nav>
