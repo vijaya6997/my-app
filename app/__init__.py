@@ -26,9 +26,15 @@ def create_app(config_class=Config):
             print(f"Warning: Could not connect to MySQL ({e}).")
             print("Falling back to local SQLite database for this session...")
             # Fallback to SQLite
-            db_path = os.path.join(app.instance_path, 'freelance.db')
-            if not os.path.exists(app.instance_path):
-                os.makedirs(app.instance_path)
+            if os.environ.get('VERCEL'):
+                db_path = '/tmp/freelance.db'
+            else:
+                db_path = os.path.join(app.instance_path, 'freelance.db')
+                if not os.path.exists(app.instance_path):
+                    try:
+                        os.makedirs(app.instance_path)
+                    except OSError:
+                        pass
             app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
     db.init_app(app)
